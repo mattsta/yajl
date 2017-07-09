@@ -12,6 +12,11 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+set(OVERGLOBAL_C_FLAGS "" CACHE STRING "OVERGLOBAL C FLAGS")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OVERGLOBAL_C_FLAGS}")
+
 SET (SRCS yajl.c yajl_lex.c yajl_parser.c yajl_buf.c
           yajl_encode.c yajl_gen.c yajl_alloc.c
           yajl_tree.c yajl_version.c
