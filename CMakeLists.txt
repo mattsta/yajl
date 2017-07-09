@@ -22,6 +22,12 @@ SET (YAJL_MICRO 1)
 
 SET (YAJL_DIST_NAME "yajl-${YAJL_MAJOR}.${YAJL_MINOR}.${YAJL_MICRO}")
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(CMAKE_SHARED_MODULE_CREATE_C_FLAGS
+        "${CMAKE_SHARED_MODULE_CREATE_C_FLAGS} -undefined dynamic_lookup")
+    cmake_policy(SET CMP0042 NEW)
+endif()
+
 IF (NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE "Release")
 ENDIF (NOT CMAKE_BUILD_TYPE)
@@ -64,18 +70,3 @@ ENDIF (WIN32)
 
 
 ADD_SUBDIRECTORY(src)
-ADD_SUBDIRECTORY(test)
-ADD_SUBDIRECTORY(reformatter)
-ADD_SUBDIRECTORY(verify)
-ADD_SUBDIRECTORY(example)
-ADD_SUBDIRECTORY(perf)
-
-INCLUDE(YAJLDoc.cmake)
-
-# a test target
-ADD_CUSTOM_TARGET(test
-                  ./run_tests.sh ${CMAKE_CURRENT_BINARY_DIR}/test/parsing/yajl_test
-                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test/parsing)
-
-ADD_CUSTOM_TARGET(test-api ${CMAKE_CURRENT_SOURCE_DIR}/test/api/run_tests.sh
-                  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/test/api)

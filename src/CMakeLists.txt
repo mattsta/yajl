@@ -32,25 +32,21 @@ SET (libDir ${CMAKE_CURRENT_BINARY_DIR}/../${YAJL_DIST_NAME}/lib)
 SET (incDir ${CMAKE_CURRENT_BINARY_DIR}/../${YAJL_DIST_NAME}/include/yajl)
 SET (shareDir ${CMAKE_CURRENT_BINARY_DIR}/../${YAJL_DIST_NAME}/share/pkgconfig)
 
+add_library(yajlStatic OBJECT
+    ${SRCS})
+
 # set the output path for libraries
 SET(LIBRARY_OUTPUT_PATH ${libDir})
 
-ADD_LIBRARY(yajl_s STATIC ${SRCS} ${HDRS} ${PUB_HDRS})
+ADD_LIBRARY(yajl_s STATIC ${SRCS})
 
-ADD_LIBRARY(yajl SHARED ${SRCS} ${HDRS} ${PUB_HDRS})
+ADD_LIBRARY(yajl SHARED ${SRCS})
 
 #### setup shared library version number
 SET_TARGET_PROPERTIES(yajl PROPERTIES
                       DEFINE_SYMBOL YAJL_SHARED
                       SOVERSION ${YAJL_MAJOR}
                       VERSION ${YAJL_MAJOR}.${YAJL_MINOR}.${YAJL_MICRO})
-
-#### ensure a .dylib has correct absolute installation paths upon installation
-IF(APPLE)
-  MESSAGE("INSTALL_NAME_DIR: ${CMAKE_INSTALL_PREFIX}/lib")
-  SET_TARGET_PROPERTIES(yajl PROPERTIES
-                        INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-ENDIF(APPLE)
 
 #### build up an sdk as a post build step
 
@@ -62,16 +58,6 @@ FILE(MAKE_DIRECTORY ${incDir})
 SET(dollar $)
 CONFIGURE_FILE(api/yajl_version.h.cmake ${incDir}/yajl_version.h)
 CONFIGURE_FILE(yajl.pc.cmake ${shareDir}/yajl.pc)
-
-# copy public headers to output directory
-FOREACH (header ${PUB_HDRS})
-  SET (header ${CMAKE_CURRENT_SOURCE_DIR}/${header})
-
-  EXEC_PROGRAM(${CMAKE_COMMAND} ARGS -E copy_if_different ${header} ${incDir})
-
-  ADD_CUSTOM_COMMAND(TARGET yajl_s POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${header} ${incDir})
-ENDFOREACH (header ${PUB_HDRS})
 
 INCLUDE_DIRECTORIES(${incDir}/..)
 
