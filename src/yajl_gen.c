@@ -114,7 +114,6 @@ yajl_gen_alloc(const yajl_alloc_funcs * afs)
     g = (yajl_gen) YA_MALLOC(afs, sizeof(struct yajl_gen_t));
     if (!g) return NULL;
 
-    memset((void *) g, 0, sizeof(struct yajl_gen_t));
     /* copy in pointers to allocation routines */
     memcpy((void *) &(g->alloc), (void *) afs, sizeof(yajl_alloc_funcs));
 
