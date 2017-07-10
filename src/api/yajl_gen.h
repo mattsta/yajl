@@ -61,7 +61,7 @@ extern "C" {
 
     /** a callback used for "printing" the results. */
     typedef void (*yajl_print_t)(void * ctx,
-                                 const char * str,
+                                 const void *str,
                                  size_t len);
 
     /** configuration parameters for the parser, these may be passed to
@@ -126,10 +126,10 @@ extern "C" {
      *  generator will return 'yajl_gen_invalid_number' */
     YAJL_API yajl_gen_status yajl_gen_double(yajl_gen hand, double number);
     YAJL_API yajl_gen_status yajl_gen_number(yajl_gen hand,
-                                             const char * num,
+                                             const void *num,
                                              size_t len);
     YAJL_API yajl_gen_status yajl_gen_string(yajl_gen hand,
-                                             const unsigned char * str,
+                                             const void *str,
                                              size_t len);
     YAJL_API yajl_gen_status yajl_gen_null(yajl_gen hand);
     YAJL_API yajl_gen_status yajl_gen_bool(yajl_gen hand, int boolean);

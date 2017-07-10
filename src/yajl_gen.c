@@ -18,6 +18,7 @@
 #include "yajl_buf.h"
 #include "yajl_encode.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -239,8 +240,9 @@ yajl_gen_double(yajl_gen g, double number)
 }
 
 yajl_gen_status
-yajl_gen_number(yajl_gen g, const char * s, size_t l)
+yajl_gen_number(yajl_gen g, const void *s_, size_t l)
 {
+    const uint8_t *s = s_;
     ENSURE_VALID_STATE; ENSURE_NOT_KEY; INSERT_SEP; INSERT_WHITESPACE;
     g->print(g->ctx, s, l);
     APPENDED_ATOM;
@@ -249,9 +251,11 @@ yajl_gen_number(yajl_gen g, const char * s, size_t l)
 }
 
 yajl_gen_status
-yajl_gen_string(yajl_gen g, const unsigned char * str,
+yajl_gen_string(yajl_gen g, const void *str_,
                 size_t len)
 {
+    const uint8_t *str = str_;
+
     // if validation is enabled, check that the string is valid utf8
     // XXX: This checking could be done a little faster, in the same pass as
     // the string encoding
