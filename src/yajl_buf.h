@@ -34,7 +34,7 @@
 typedef struct yajl_buf_t * yajl_buf;
 
 /* allocate a new buffer */
-yajl_buf yajl_buf_alloc(yajl_alloc_funcs * alloc);
+yajl_buf yajl_buf_alloc(const yajl_alloc_funcs * alloc);
 
 /* free the buffer */
 void yajl_buf_free(yajl_buf buf);

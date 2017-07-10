@@ -44,7 +44,7 @@ struct yajl_gen_t
     yajl_print_t print;
     void * ctx; /* yajl_buf */
     /* memory allocation routines */
-    yajl_alloc_funcs alloc;
+    const yajl_alloc_funcs *alloc;
 };
 
 int
@@ -114,11 +114,10 @@ yajl_gen_alloc(const yajl_alloc_funcs * afs)
     g = (yajl_gen) YA_MALLOC(afs, sizeof(struct yajl_gen_t));
     if (!g) return NULL;
 
-    /* copy in pointers to allocation routines */
-    memcpy((void *) &(g->alloc), (void *) afs, sizeof(yajl_alloc_funcs));
+    g->alloc = afs;
 
     g->print = (yajl_print_t)&yajl_buf_append;
-    g->ctx = yajl_buf_alloc(&(g->alloc));
+    g->ctx = yajl_buf_alloc(g->alloc);
     g->indentString = "    ";
 
     return g;
@@ -136,7 +135,7 @@ void
 yajl_gen_free(yajl_gen g)
 {
     if (g->print == (yajl_print_t)&yajl_buf_append) yajl_buf_free((yajl_buf)g->ctx);
-    YA_FREE(&(g->alloc), g);
+    YA_FREE(g->alloc, g);
 }
 
 #define INSERT_SEP \

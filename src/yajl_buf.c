@@ -26,7 +26,7 @@ struct yajl_buf_t {
     size_t len;
     size_t used;
     unsigned char * data;
-    yajl_alloc_funcs * alloc;
+    const yajl_alloc_funcs * alloc;
 };
 
 static
@@ -53,7 +53,7 @@ void yajl_buf_ensure_available(yajl_buf buf, size_t want)
     }
 }
 
-yajl_buf yajl_buf_alloc(yajl_alloc_funcs * alloc)
+yajl_buf yajl_buf_alloc(const yajl_alloc_funcs * alloc)
 {
     yajl_buf b = YA_MALLOC(alloc, sizeof(struct yajl_buf_t));
     memset((void *) b, 0, sizeof(struct yajl_buf_t));
