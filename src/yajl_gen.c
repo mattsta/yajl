@@ -48,6 +48,10 @@ struct yajl_gen_t
     const yajl_alloc_funcs *alloc;
 };
 
+void yajl_gen_pretty_enable(yajl_gen g) {
+    g->flags |= yajl_gen_beautify;
+}
+
 int
 yajl_gen_config(yajl_gen g, yajl_gen_option opt, ...)
 {

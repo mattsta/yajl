@@ -160,6 +160,8 @@ extern "C" {
      *  may be accomplished explicitly by calling yajl_gen_clear() */
     YAJL_API void yajl_gen_reset(yajl_gen hand, const char * sep);
 
+void yajl_gen_pretty_enable(yajl_gen g);
+
 #ifdef __cplusplus
 }
 #endif
