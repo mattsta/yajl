@@ -1,7 +1,7 @@
 #ifndef YAJL_VERSION_H_
 #define YAJL_VERSION_H_
 
-#include <yajl/yajl_common.h>
+#include "yajl_common.h"
 
 #define YAJL_MAJOR ${YAJL_MAJOR}
 #define YAJL_MINOR ${YAJL_MINOR}
