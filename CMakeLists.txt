@@ -34,39 +34,18 @@ ENDIF (NOT CMAKE_BUILD_TYPE)
 
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
-IF (WIN32)
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4")
-  ADD_DEFINITIONS(-DWIN32)
-  SET(linkFlags "/PDB:NONE /INCREMENTAL:NO /OPT:NOREF /OPT:NOICF")
-  SET(CMAKE_EXE_LINKER_FLAGS    "${linkFlags}"
-      CACHE STRING "YAJL linker flags" FORCE)
-  SET(CMAKE_EXE_LINKER_FLAGS_DEBUG ""
-      CACHE STRING "YAJL debug linker flags" FORCE)
-  SET(CMAKE_EXE_LINKER_FLAGS_RELEASE
-      CACHE STRING "YAJL release linker flags" FORCE)
-  SET(CMAKE_SHARED_LINKER_FLAGS "${linkFlags}"
-      CACHE STRING "YAJL shared linker flags" FORCE)
-  SET(CMAKE_MODULE_LINKER_FLAGS "${linkFlags}"
-      CACHE STRING "YAJL module linker flags" FORCE)
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /wd4996 /wd4255 /wd4130 /wd4100 /wd4711")
-  SET(CMAKE_C_FLAGS_DEBUG "/D DEBUG /Od /Z7")
-  SET(CMAKE_C_FLAGS_RELEASE "/D NDEBUG /O2")
-ELSE (WIN32)
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
-  IF(CMAKE_COMPILER_IS_GNUCC)
-    INCLUDE(CheckCCompilerFlag)
-    CHECK_C_COMPILER_FLAG(-fvisibility=hidden HAVE_GCC_VISIBILITY)
-    IF(HAVE_GCC_VISIBILITY)
-      SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
-    ENDIF(HAVE_GCC_VISIBILITY)
-  ENDIF(CMAKE_COMPILER_IS_GNUCC)
-  SET(CMAKE_C_FLAGS
-      "${CMAKE_C_FLAGS} -std=c99 -pedantic -Wpointer-arith -Wno-format-y2k -Wstrict-prototypes -Wmissing-declarations -Wnested-externs -Wextra	-Wundef -Wwrite-strings -Wold-style-definition -Wredundant-decls -Wno-unused-parameter -Wno-sign-compare -Wmissing-prototypes")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -pedantic -Wpointer-arith")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-format-y2k -Wstrict-prototypes")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-declarations -Wnested-externs")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra	-Wundef -Wwrite-strings")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wold-style-definition -Wredundant-decls")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter -Wno-sign-compare ")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-prototypes")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
 
-  SET(CMAKE_C_FLAGS_DEBUG "-DDEBUG -g")
-  SET(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2 -Wuninitialized")
-ENDIF (WIN32)
-
+SET(CMAKE_C_FLAGS_DEBUG "-DDEBUG -g")
+SET(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O3 -Wuninitialized")
 
 ADD_SUBDIRECTORY(src)

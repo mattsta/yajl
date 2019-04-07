@@ -25,22 +25,7 @@ extern "C" {
 
 #define YAJL_MAX_DEPTH 128
 
-/* msft dll export gunk.  To build a DLL on windows, you
- * must define WIN32, YAJL_SHARED, and YAJL_BUILD.  To use a shared
- * DLL, you must define YAJL_SHARED and WIN32 */
-#if (defined(_WIN32) || defined(WIN32)) && defined(YAJL_SHARED)
-#  ifdef YAJL_BUILD
-#    define YAJL_API __declspec(dllexport)
-#  else
-#    define YAJL_API __declspec(dllimport)
-#  endif
-#else
-#  if defined(__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__) >= 303
-#    define YAJL_API __attribute__ ((visibility("default")))
-#  else
-#    define YAJL_API
-#  endif
-#endif
+#define YAJL_API
 
 /** pointer to a malloc function, supporting client overriding memory
  *  allocation routines */
