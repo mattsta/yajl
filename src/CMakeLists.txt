@@ -14,10 +14,11 @@
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-SET (SRCS yajl.c yajl_lex.c yajl_parser.c yajl_buf.c
+add_library(yajl OBJECT yajl.c yajl_lex.c yajl_parser.c yajl_buf.c
           yajl_encode.c yajl_gen.c yajl_alloc.c
           yajl_tree.c
 )
+
 SET (HDRS yajl_parser.h yajl_lex.h yajl_buf.h yajl_encode.h yajl_alloc.h)
 SET (PUB_HDRS api/yajl_parse.h api/yajl_gen.h api/yajl_common.h api/yajl_tree.h)
 
@@ -34,15 +35,11 @@ SET (libDir ${CMAKE_CURRENT_BINARY_DIR}/../${YAJL_DIST_NAME}/lib)
 SET (incDir ${CMAKE_CURRENT_BINARY_DIR}/../${YAJL_DIST_NAME}/include/yajl)
 SET (shareDir ${CMAKE_CURRENT_BINARY_DIR}/../${YAJL_DIST_NAME}/share/pkgconfig)
 
-add_library(yajlStatic OBJECT
-    ${SRCS})
-
 # set the output path for libraries
 SET(LIBRARY_OUTPUT_PATH ${libDir})
 
-ADD_LIBRARY(yajl_s STATIC ${SRCS})
-
-ADD_LIBRARY(yajl SHARED ${SRCS})
+ADD_LIBRARY(yajl-static STATIC $<TARGET_OBJECTS:yajl>)
+ADD_LIBRARY(yajl-shared SHARED $<TARGET_OBJECTS:yajl>)
 
 #### setup shared library version number
 SET_TARGET_PROPERTIES(yajl PROPERTIES
@@ -69,7 +66,7 @@ INSTALL(TARGETS yajl
         RUNTIME DESTINATION lib${LIB_SUFFIX}
         LIBRARY DESTINATION lib${LIB_SUFFIX}
         ARCHIVE DESTINATION lib${LIB_SUFFIX})
-INSTALL(TARGETS yajl_s ARCHIVE DESTINATION lib${LIB_SUFFIX})
+INSTALL(TARGETS yajl-static ARCHIVE DESTINATION lib${LIB_SUFFIX})
 INSTALL(FILES ${PUB_HDRS} DESTINATION include/yajl)
 INSTALL(FILES ${incDir}/yajl_version.h DESTINATION include/yajl)
 INSTALL(FILES ${shareDir}/yajl.pc DESTINATION share/pkgconfig)
