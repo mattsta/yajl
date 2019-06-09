@@ -45,7 +45,4 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter -Wno-sign-compare ")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-prototypes")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
 
-SET(CMAKE_C_FLAGS_DEBUG "-DDEBUG -g")
-SET(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O3 -Wuninitialized")
-
 ADD_SUBDIRECTORY(src)
