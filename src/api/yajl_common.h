@@ -29,19 +29,18 @@ extern "C" {
 
 /** pointer to a malloc function, supporting client overriding memory
  *  allocation routines */
-typedef void * (*yajl_malloc_func)(void *ctx, size_t sz);
+typedef void *(*yajl_malloc_func)(void *ctx, size_t sz);
 
 /** pointer to a free function, supporting client overriding memory
  *  allocation routines */
-typedef void (*yajl_free_func)(void *ctx, void * ptr);
+typedef void (*yajl_free_func)(void *ctx, void *ptr);
 
 /** pointer to a realloc function which can resize an allocation. */
-typedef void * (*yajl_realloc_func)(void *ctx, void * ptr, size_t sz);
+typedef void *(*yajl_realloc_func)(void *ctx, void *ptr, size_t sz);
 
 /** A structure which can be passed to yajl_*_alloc routines to allow the
  *  client to specify memory allocation functions to be used. */
-typedef struct
-{
+typedef struct {
     /** pointer to a function that can allocate uninitialized memory */
     yajl_malloc_func malloc;
     /** pointer to a function that can resize memory allocations */
@@ -50,11 +49,12 @@ typedef struct
      *  reallocFunction or mallocFunction */
     yajl_free_func free;
     /** a context pointer that will be passed to above allocation routines */
-    void * ctx;
+    void *ctx;
 } yajl_alloc_funcs;
 
 #ifdef __cplusplus
 }
+
 #endif
 
 #endif

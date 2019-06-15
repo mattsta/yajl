@@ -18,10 +18,9 @@
 #define __YAJL_PARSER_H__
 
 #include "api/yajl_parse.h"
-#include "yajl_bytestack.h"
 #include "yajl_buf.h"
+#include "yajl_bytestack.h"
 #include "yajl_lex.h"
-
 
 typedef enum {
     yajl_state_start = 0,
@@ -40,10 +39,10 @@ typedef enum {
 } yajl_state;
 
 struct yajl_handle_t {
-    const yajl_callbacks * callbacks;
-    void * ctx;
+    const yajl_callbacks *callbacks;
+    void *ctx;
     yajl_lexer lexer;
-    const char * parseError;
+    const char *parseError;
     /* the number of bytes consumed from the last client buffer,
      * in the case of an error this will be an error offset, in the
      * case of an error this can be used as the error offset */
@@ -58,21 +57,17 @@ struct yajl_handle_t {
     unsigned int flags;
 };
 
-yajl_status
-yajl_do_parse(yajl_handle handle, const unsigned char * jsonText,
-              size_t jsonTextLen);
+yajl_status yajl_do_parse(yajl_handle handle, const unsigned char *jsonText,
+                          size_t jsonTextLen);
 
-yajl_status
-yajl_do_finish(yajl_handle handle);
+yajl_status yajl_do_finish(yajl_handle handle);
 
-unsigned char *
-yajl_render_error_string(yajl_handle hand, const unsigned char * jsonText,
-                         size_t jsonTextLen, int verbose);
+unsigned char *yajl_render_error_string(yajl_handle hand,
+                                        const unsigned char *jsonText,
+                                        size_t jsonTextLen, int verbose);
 
 /* A little built in integer parsing routine with the same semantics as strtol
  * that's unaffected by LOCALE. */
-long long
-yajl_parse_integer(const unsigned char *number, unsigned int length);
-
+long long yajl_parse_integer(const unsigned char *number, unsigned int length);
 
 #endif

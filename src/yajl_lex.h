@@ -45,10 +45,9 @@ typedef enum {
     yajl_tok_comment
 } yajl_tok;
 
-typedef struct yajl_lexer_t * yajl_lexer;
+typedef struct yajl_lexer_t *yajl_lexer;
 
-yajl_lexer yajl_lex_alloc(yajl_alloc_funcs * alloc,
-                          unsigned int allowComments,
+yajl_lexer yajl_lex_alloc(yajl_alloc_funcs *alloc, unsigned int allowComments,
                           unsigned int validateUTF8);
 
 void yajl_lex_free(yajl_lexer lexer);
@@ -75,14 +74,13 @@ void yajl_lex_free(yajl_lexer lexer);
  * implications which require that the client choose a reasonable chunk
  * size to get adequate performance.
  */
-yajl_tok yajl_lex_lex(yajl_lexer lexer, const unsigned char * jsonText,
-                      size_t jsonTextLen, size_t * offset,
-                      const unsigned char ** outBuf, size_t * outLen);
+yajl_tok yajl_lex_lex(yajl_lexer lexer, const unsigned char *jsonText,
+                      size_t jsonTextLen, size_t *offset,
+                      const unsigned char **outBuf, size_t *outLen);
 
 /** have a peek at the next token, but don't move the lexer forward */
-yajl_tok yajl_lex_peek(yajl_lexer lexer, const unsigned char * jsonText,
+yajl_tok yajl_lex_peek(yajl_lexer lexer, const unsigned char *jsonText,
                        size_t jsonTextLen, size_t offset);
-
 
 typedef enum {
     yajl_lex_e_ok = 0,
@@ -98,7 +96,7 @@ typedef enum {
     yajl_lex_unallowed_comment
 } yajl_lex_error;
 
-const char * yajl_lex_error_to_string(yajl_lex_error error);
+const char *yajl_lex_error_to_string(yajl_lex_error error);
 
 /** allows access to more specific information about the lexical
  *  error when yajl_lex_lex returns yajl_tok_error. */
