@@ -15,9 +15,11 @@
  */
 
 #include "api/yajl_gen.h"
+#include "dualBox.h"
 #include "yajl_buf.h"
 #include "yajl_encode.h"
 
+#include <assert.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -25,27 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef enum {
-    yajl_gen_start,
-    yajl_gen_map_start,
-    yajl_gen_map_key,
-    yajl_gen_map_val,
-    yajl_gen_array_start,
-    yajl_gen_in_array,
-    yajl_gen_complete,
-    yajl_gen_error
-} yajl_gen_state;
-
-struct yajl_gen_t {
-    unsigned int flags;
-    unsigned int depth;
-    const char *indentString;
-    yajl_gen_state state[YAJL_MAX_DEPTH];
-    yajl_print_t print;
-    void *ctx; /* yajl_buf */
-    /* memory allocation routines */
-    const yajl_alloc_funcs *alloc;
-};
+static const char *indentString = "    ";
 
 void yajl_gen_pretty_enable(yajl_gen g) {
     g->flags |= yajl_gen_beautify;
@@ -69,11 +51,11 @@ int yajl_gen_config(yajl_gen g, yajl_gen_option opt, ...) {
         break;
     case yajl_gen_indent_string: {
         const char *indent = va_arg(ap, const char *);
-        g->indentString = indent;
+        indentString = indent;
         for (; *indent; indent++) {
             if (*indent != '\n' && *indent != '\v' && *indent != '\f' &&
                 *indent != '\t' && *indent != '\r' && *indent != ' ') {
-                g->indentString = NULL;
+                indentString = NULL;
                 rv = 0;
             }
         }
@@ -81,11 +63,6 @@ int yajl_gen_config(yajl_gen g, yajl_gen_option opt, ...) {
         break;
     }
 
-    case yajl_gen_print_callback:
-        yajl_buf_free(g->ctx);
-        g->print = va_arg(ap, const yajl_print_t);
-        g->ctx = va_arg(ap, void *);
-        break;
     default:
         rv = 0;
     }
@@ -95,118 +72,134 @@ int yajl_gen_config(yajl_gen g, yajl_gen_option opt, ...) {
     return rv;
 }
 
-yajl_gen yajl_gen_alloc(const yajl_alloc_funcs *afs) {
+void yajl_gen_deinit(yajl_gen g) {
+    yajlDualStorageReset(&g->statusAtDepth);
+}
+
+void yajl_gen_free_buffer(yajl_gen g) {
+    yajl_buf_free(&g->buf);
+    g->buf = (yajl_buf_t){0};
+}
+
+yajl_gen yajl_gen_alloc(void) {
     yajl_gen g = NULL;
-    yajl_alloc_funcs afsBuffer;
 
-    /* first order of business is to set up memory allocation routines */
-    if (afs != NULL) {
-        if (afs->malloc == NULL || afs->realloc == NULL || afs->free == NULL) {
-            return NULL;
-        }
-    } else {
-        yajl_set_default_alloc_funcs(&afsBuffer);
-        afs = &afsBuffer;
-    }
-
-    g = (yajl_gen)YA_MALLOC(afs, sizeof(struct yajl_gen_t));
+    g = (yajl_gen)YA_CALLOC(sizeof(struct yajl_gen_t));
     if (!g) {
         return NULL;
     }
-
-    g->alloc = afs;
-
-    g->print = (yajl_print_t)&yajl_buf_append;
-    g->ctx = yajl_buf_alloc(g->alloc);
-    g->indentString = "    ";
 
     return g;
 }
 
 void yajl_gen_reset(yajl_gen g, const char *sep) {
     g->depth = 0;
-    memset((void *)&(g->state), 0, sizeof(g->state));
+    yajlDualStorageReset(&g->statusAtDepth);
     if (sep != NULL) {
-        g->print(g->ctx, sep, strlen(sep));
+        yajl_buf_append(&g->buf, sep, strlen(sep));
     }
 }
 
 void yajl_gen_free(yajl_gen g) {
-    if (g->print == (yajl_print_t)&yajl_buf_append) {
-        yajl_buf_free((yajl_buf)g->ctx);
-    }
-
-    YA_FREE(g->alloc, g);
+    yajl_buf_free(&g->buf);
+    YA_FREE(g);
 }
 
 #define INSERT_SEP                                                             \
-    if (g->state[g->depth] == yajl_gen_map_key ||                              \
-        g->state[g->depth] == yajl_gen_in_array) {                             \
-        g->print(g->ctx, ",", 1);                                              \
-        if ((g->flags & yajl_gen_beautify))                                    \
-            g->print(g->ctx, "\n", 1);                                         \
-    } else if (g->state[g->depth] == yajl_gen_map_val) {                       \
-        g->print(g->ctx, ":", 1);                                              \
-        if ((g->flags & yajl_gen_beautify))                                    \
-            g->print(g->ctx, " ", 1);                                          \
-    }
+    do {                                                                       \
+        const yajl_gen_state current =                                         \
+            yajlDualStorageGet(&g->statusAtDepth, g->depth);                   \
+        if (current == yajl_gen_map_key || current == yajl_gen_in_array) {     \
+            yajl_buf_append(&g->buf, ",", 1);                                  \
+            if (g->flags & yajl_gen_beautify) {                                \
+                yajl_buf_append(&g->buf, "\n", 1);                             \
+            }                                                                  \
+        } else if (current == yajl_gen_map_val) {                              \
+            yajl_buf_append(&g->buf, ":", 1);                                  \
+            if (g->flags & yajl_gen_beautify) {                                \
+                yajl_buf_append(&g->buf, " ", 1);                              \
+            }                                                                  \
+        }                                                                      \
+    } while (0)
 
 #define INSERT_WHITESPACE                                                      \
     if ((g->flags & yajl_gen_beautify)) {                                      \
-        if (g->state[g->depth] != yajl_gen_map_val) {                          \
+        if (yajlDualStorageGet(&g->statusAtDepth, g->depth) !=                 \
+            yajl_gen_map_val) {                                                \
             unsigned int _i;                                                   \
             for (_i = 0; _i < g->depth; _i++)                                  \
-                g->print(g->ctx, g->indentString,                              \
-                         (unsigned int)strlen(g->indentString));               \
+                yajl_buf_append(&g->buf, indentString,                         \
+                                (unsigned int)strlen(indentString));           \
         }                                                                      \
     }
 
 #define ENSURE_NOT_KEY                                                         \
-    if (g->state[g->depth] == yajl_gen_map_key ||                              \
-        g->state[g->depth] == yajl_gen_map_start) {                            \
-        return yajl_gen_keys_must_be_strings;                                  \
-    }
+    do {                                                                       \
+        const yajl_gen_state current =                                         \
+            yajlDualStorageGet(&g->statusAtDepth, g->depth);                   \
+        if (current == yajl_gen_map_key || current == yajl_gen_map_start) {    \
+            return yajl_gen_keys_must_be_strings;                              \
+        }                                                                      \
+    } while (0)
 
 /* check that we're not complete, or in error state.  in a valid state
  * to be generating */
 #define ENSURE_VALID_STATE                                                     \
-    if (g->state[g->depth] == yajl_gen_error) {                                \
-        return yajl_gen_in_error_state;                                        \
-    } else if (g->state[g->depth] == yajl_gen_complete) {                      \
-        return yajl_gen_generation_complete;                                   \
-    }
+    do {                                                                       \
+        const yajl_gen_state current =                                         \
+            yajlDualStorageGet(&g->statusAtDepth, g->depth);                   \
+        if (current == yajl_gen_error) {                                       \
+            return yajl_gen_in_error_state;                                    \
+        }                                                                      \
+                                                                               \
+        if (current == yajl_gen_complete) {                                    \
+            return yajl_gen_generation_complete;                               \
+        }                                                                      \
+    } while (0)
 
 #define INCREMENT_DEPTH                                                        \
-    if (++(g->depth) >= YAJL_MAX_DEPTH)                                        \
-        return yajl_max_depth_exceeded;
+    do {                                                                       \
+        g->depth++;                                                            \
+        /* Add new slot if required */                                         \
+        yajlDualStorageGrow(&g->statusAtDepth, g->depth);                      \
+    } while (0)
 
 #define DECREMENT_DEPTH                                                        \
-    if (--(g->depth) >= YAJL_MAX_DEPTH)                                        \
-        return yajl_gen_generation_complete;
+    do {                                                                       \
+        g->depth--;                                                            \
+    } while (0)
 
 #define APPENDED_ATOM                                                          \
-    switch (g->state[g->depth]) {                                              \
-    case yajl_gen_start:                                                       \
-        g->state[g->depth] = yajl_gen_complete;                                \
-        break;                                                                 \
-    case yajl_gen_map_start:                                                   \
-    case yajl_gen_map_key:                                                     \
-        g->state[g->depth] = yajl_gen_map_val;                                 \
-        break;                                                                 \
-    case yajl_gen_array_start:                                                 \
-        g->state[g->depth] = yajl_gen_in_array;                                \
-        break;                                                                 \
-    case yajl_gen_map_val:                                                     \
-        g->state[g->depth] = yajl_gen_map_key;                                 \
-        break;                                                                 \
-    default:                                                                   \
-        break;                                                                 \
-    }
+    do {                                                                       \
+        yajl_gen_state *current =                                              \
+            yajlDualStorageGetPtr(&g->statusAtDepth, g->depth);                \
+        switch (*current) {                                                    \
+        case yajl_gen_start:                                                   \
+            *current = yajl_gen_complete;                                      \
+            break;                                                             \
+        case yajl_gen_map_start:                                               \
+        case yajl_gen_map_key:                                                 \
+            *current = yajl_gen_map_val;                                       \
+            break;                                                             \
+        case yajl_gen_array_start:                                             \
+            *current = yajl_gen_in_array;                                      \
+            break;                                                             \
+        case yajl_gen_map_val:                                                 \
+            *current = yajl_gen_map_key;                                       \
+            break;                                                             \
+        default:                                                               \
+            break;                                                             \
+        }                                                                      \
+    } while (0)
 
 #define FINAL_NEWLINE                                                          \
-    if ((g->flags & yajl_gen_beautify) &&                                      \
-        g->state[g->depth] == yajl_gen_complete)                               \
-        g->print(g->ctx, "\n", 1);
+    do {                                                                       \
+        if ((g->flags & yajl_gen_beautify) &&                                  \
+            yajlDualStorageGet(&g->statusAtDepth, g->depth) ==                 \
+                yajl_gen_complete) {                                           \
+            yajl_buf_append(&g->buf, "\n", 1);                                 \
+        }                                                                      \
+    } while (0)
 
 yajl_gen_status yajl_gen_integer(yajl_gen g, long long int number) {
     char i[32];
@@ -214,8 +207,9 @@ yajl_gen_status yajl_gen_integer(yajl_gen g, long long int number) {
     ENSURE_NOT_KEY;
     INSERT_SEP;
     INSERT_WHITESPACE;
-    sprintf(i, "%lld", number);
-    g->print(g->ctx, i, (unsigned int)strlen(i));
+    /* TODO: replace snprintf with StrInt64ToBuf */
+    const size_t wroteLen = snprintf(i, sizeof(i), "%lld", number);
+    yajl_buf_append(&g->buf, i, wroteLen);
     APPENDED_ATOM;
     FINAL_NEWLINE;
     return yajl_gen_status_ok;
@@ -237,12 +231,12 @@ yajl_gen_status yajl_gen_double(yajl_gen g, double number) {
 
     INSERT_SEP;
     INSERT_WHITESPACE;
-    sprintf(i, "%.20g", number);
-    if (strspn(i, "0123456789-") == strlen(i)) {
+    const size_t wroteLen = snprintf(i, sizeof(i), "%.20g", number);
+    if (strspn(i, "0123456789-") == wroteLen) {
         strcat(i, ".0");
     }
 
-    g->print(g->ctx, i, (unsigned int)strlen(i));
+    yajl_buf_append(&g->buf, i, wroteLen);
     APPENDED_ATOM;
     FINAL_NEWLINE;
     return yajl_gen_status_ok;
@@ -254,7 +248,7 @@ yajl_gen_status yajl_gen_number(yajl_gen g, const void *s_, size_t l) {
     ENSURE_NOT_KEY;
     INSERT_SEP;
     INSERT_WHITESPACE;
-    g->print(g->ctx, s, l);
+    yajl_buf_append(&g->buf, s, l);
     APPENDED_ATOM;
     FINAL_NEWLINE;
     return yajl_gen_status_ok;
@@ -275,10 +269,9 @@ yajl_gen_status yajl_gen_string(yajl_gen g, const void *str_, size_t len) {
     ENSURE_VALID_STATE;
     INSERT_SEP;
     INSERT_WHITESPACE;
-    g->print(g->ctx, "\"", 1);
-    yajl_string_encode(g->print, g->ctx, str, len,
-                       g->flags & yajl_gen_escape_solidus);
-    g->print(g->ctx, "\"", 1);
+    yajl_buf_append(&g->buf, "\"", 1);
+    yajl_string_encode(&g->buf, str, len, g->flags & yajl_gen_escape_solidus);
+    yajl_buf_append(&g->buf, "\"", 1);
     APPENDED_ATOM;
     FINAL_NEWLINE;
     return yajl_gen_status_ok;
@@ -289,7 +282,7 @@ yajl_gen_status yajl_gen_null(yajl_gen g) {
     ENSURE_NOT_KEY;
     INSERT_SEP;
     INSERT_WHITESPACE;
-    g->print(g->ctx, "null", strlen("null"));
+    yajl_buf_append(&g->buf, "null", strlen("null"));
     APPENDED_ATOM;
     FINAL_NEWLINE;
     return yajl_gen_status_ok;
@@ -302,7 +295,7 @@ yajl_gen_status yajl_gen_bool(yajl_gen g, int boolean) {
     ENSURE_NOT_KEY;
     INSERT_SEP;
     INSERT_WHITESPACE;
-    g->print(g->ctx, val, (unsigned int)strlen(val));
+    yajl_buf_append(&g->buf, val, (unsigned int)strlen(val));
     APPENDED_ATOM;
     FINAL_NEWLINE;
     return yajl_gen_status_ok;
@@ -315,10 +308,10 @@ yajl_gen_status yajl_gen_map_open(yajl_gen g) {
     INSERT_WHITESPACE;
     INCREMENT_DEPTH;
 
-    g->state[g->depth] = yajl_gen_map_start;
-    g->print(g->ctx, "{", 1);
+    *yajlDualStorageGetPtr(&g->statusAtDepth, g->depth) = yajl_gen_map_start;
+    yajl_buf_append(&g->buf, "{", 1);
     if ((g->flags & yajl_gen_beautify)) {
-        g->print(g->ctx, "\n", 1);
+        yajl_buf_append(&g->buf, "\n", 1);
     }
 
     FINAL_NEWLINE;
@@ -330,12 +323,12 @@ yajl_gen_status yajl_gen_map_close(yajl_gen g) {
     DECREMENT_DEPTH;
 
     if ((g->flags & yajl_gen_beautify)) {
-        g->print(g->ctx, "\n", 1);
+        yajl_buf_append(&g->buf, "\n", 1);
     }
 
     APPENDED_ATOM;
     INSERT_WHITESPACE;
-    g->print(g->ctx, "}", 1);
+    yajl_buf_append(&g->buf, "}", 1);
     FINAL_NEWLINE;
     return yajl_gen_status_ok;
 }
@@ -346,10 +339,10 @@ yajl_gen_status yajl_gen_array_open(yajl_gen g) {
     INSERT_SEP;
     INSERT_WHITESPACE;
     INCREMENT_DEPTH;
-    g->state[g->depth] = yajl_gen_array_start;
-    g->print(g->ctx, "[", 1);
+    *yajlDualStorageGetPtr(&g->statusAtDepth, g->depth) = yajl_gen_array_start;
+    yajl_buf_append(&g->buf, "[", 1);
     if ((g->flags & yajl_gen_beautify)) {
-        g->print(g->ctx, "\n", 1);
+        yajl_buf_append(&g->buf, "\n", 1);
     }
 
     FINAL_NEWLINE;
@@ -360,29 +353,22 @@ yajl_gen_status yajl_gen_array_close(yajl_gen g) {
     ENSURE_VALID_STATE;
     DECREMENT_DEPTH;
     if ((g->flags & yajl_gen_beautify)) {
-        g->print(g->ctx, "\n", 1);
+        yajl_buf_append(&g->buf, "\n", 1);
     }
 
     APPENDED_ATOM;
     INSERT_WHITESPACE;
-    g->print(g->ctx, "]", 1);
+    yajl_buf_append(&g->buf, "]", 1);
     FINAL_NEWLINE;
     return yajl_gen_status_ok;
 }
 
-yajl_gen_status yajl_gen_get_buf(yajl_gen g, const unsigned char **buf,
-                                 size_t *len) {
-    if (g->print != (yajl_print_t)&yajl_buf_append) {
-        return yajl_gen_no_buf;
-    }
-
-    *buf = yajl_buf_data((yajl_buf)g->ctx);
-    *len = yajl_buf_len((yajl_buf)g->ctx);
+yajl_gen_status yajl_gen_get_buf(yajl_gen g, void **buf, size_t *len) {
+    *buf = g->buf.data;
+    *len = yajl_buf_len(&g->buf);
     return yajl_gen_status_ok;
 }
 
 void yajl_gen_clear(yajl_gen g) {
-    if (g->print == (yajl_print_t)&yajl_buf_append) {
-        yajl_buf_clear((yajl_buf)g->ctx);
-    }
+    yajl_buf_clear(&g->buf);
 }

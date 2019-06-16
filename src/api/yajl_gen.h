@@ -21,6 +21,9 @@
 
 #include "yajl_common.h"
 
+/* Break some internal/external code separation */
+#include "../yajl_buf.h"
+
 #ifndef __YAJL_GEN_H__
 #define __YAJL_GEN_H__
 
@@ -56,11 +59,35 @@ typedef enum {
     yajl_gen_invalid_string
 } yajl_gen_status;
 
+typedef enum __attribute__((packed)) yajl_gen_state {
+    yajl_gen_start,
+    yajl_gen_map_start,
+    yajl_gen_map_key,
+    yajl_gen_map_val,
+    yajl_gen_array_start,
+    yajl_gen_in_array,
+    yajl_gen_complete,
+    yajl_gen_error
+} yajl_gen_state;
+
+_Static_assert(sizeof(yajl_gen_state) == 1, "Not using packed state?");
+
+typedef struct yajlGenStateStatus {
+    yajl_gen_state local[8];
+    yajl_gen_state *allocated;
+    uint32_t count;
+    uint32_t totalCountOfAllocated;
+} yajlGenStateStatus;
+
+typedef struct yajl_gen_t {
+    yajl_buf_t buf;
+    yajlGenStateStatus statusAtDepth;
+    size_t flags;
+    size_t depth;
+} yajl_gen_t;
+
 /** an opaque handle to a generator */
 typedef struct yajl_gen_t *yajl_gen;
-
-/** a callback used for "printing" the results. */
-typedef void (*yajl_print_t)(void *ctx, const void *str, size_t len);
 
 /** configuration parameters for the parser, these may be passed to
  *  yajl_gen_config() along with option specific argument(s).  In general,
@@ -74,16 +101,6 @@ typedef enum {
      * spaces.  The default is four spaces ' '.
      */
     yajl_gen_indent_string = 0x02,
-    /**
-     * Set a function and context argument that should be used to
-     * output generated json.  the function should conform to the
-     * yajl_print_t prototype while the context argument is a
-     * void * of your choosing.
-     *
-     * example:
-     *   yajl_gen_config(g, yajl_gen_print_callback, myFunc, myVoidPtr);
-     */
-    yajl_gen_print_callback = 0x04,
     /**
      * Normally the generator does not validate that strings you
      * pass to it via yajl_gen_string() are valid UTF8.  Enabling
@@ -105,6 +122,10 @@ typedef enum {
  */
 YAJL_API int yajl_gen_config(yajl_gen g, yajl_gen_option opt, ...);
 
+/* Maintain your own yajl_gen_t storage and free things here... */
+void yajl_gen_deinit(yajl_gen g);
+void yajl_gen_free_buffer(yajl_gen g);
+
 /** allocate a generator handle
  *  \param allocFuncs an optional pointer to a structure which allows
  *                    the client to overide the memory allocation
@@ -113,7 +134,7 @@ YAJL_API int yajl_gen_config(yajl_gen g, yajl_gen_option opt, ...);
  *
  *  \returns an allocated handle on success, NULL on failure (bad params)
  */
-YAJL_API yajl_gen yajl_gen_alloc(const yajl_alloc_funcs *allocFuncs);
+YAJL_API yajl_gen yajl_gen_alloc(void);
 
 /** free a generator handle */
 YAJL_API void yajl_gen_free(yajl_gen handle);
@@ -137,8 +158,7 @@ YAJL_API yajl_gen_status yajl_gen_array_close(yajl_gen hand);
 /** access the null terminated generator buffer.  If incrementally
  *  outputing JSON, one should call yajl_gen_clear to clear the
  *  buffer.  This allows stream generation. */
-YAJL_API yajl_gen_status yajl_gen_get_buf(yajl_gen hand,
-                                          const unsigned char **buf,
+YAJL_API yajl_gen_status yajl_gen_get_buf(yajl_gen hand, void **buf,
                                           size_t *len);
 
 /** clear yajl's output buffer, but maintain all internal generation

@@ -18,18 +18,17 @@
 #define __YAJL_COMMON_H__
 
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define YAJL_MAX_DEPTH 128
-
 #define YAJL_API
 
 /** pointer to a malloc function, supporting client overriding memory
  *  allocation routines */
-typedef void *(*yajl_malloc_func)(void *ctx, size_t sz);
+typedef void *(*yajl_calloc_func)(void *ctx, size_t sz);
 
 /** pointer to a free function, supporting client overriding memory
  *  allocation routines */
@@ -42,7 +41,7 @@ typedef void *(*yajl_realloc_func)(void *ctx, void *ptr, size_t sz);
  *  client to specify memory allocation functions to be used. */
 typedef struct {
     /** pointer to a function that can allocate uninitialized memory */
-    yajl_malloc_func malloc;
+    yajl_calloc_func calloc;
     /** pointer to a function that can resize memory allocations */
     yajl_realloc_func realloc;
     /** pointer to a function that can free memory allocated using

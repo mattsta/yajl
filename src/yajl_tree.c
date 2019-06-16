@@ -430,7 +430,7 @@ yajl_val yajl_tree_parse(const char *input, char *error_buffer,
             internal_err_str = (char *)yajl_get_error(
                 handle, 1, (const unsigned char *)input, strlen(input));
             snprintf(error_buffer, error_buffer_size, "%s", internal_err_str);
-            YA_FREE(&(handle->alloc), internal_err_str);
+            YA_FREE(internal_err_str);
         }
 
         yajl_free(handle);

@@ -12,15 +12,15 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+cmake_minimum_required(VERSION 2.6)
 
-PROJECT(YetAnotherJSONParser C)
+project(YetAnotherJSONParser C)
 
-SET (YAJL_MAJOR 2)
-SET (YAJL_MINOR 1)
-SET (YAJL_MICRO 1)
+set(YAJL_MAJOR 2)
+set(YAJL_MINOR 1)
+set(YAJL_MICRO 1)
 
-SET (YAJL_DIST_NAME "yajl-${YAJL_MAJOR}.${YAJL_MINOR}.${YAJL_MICRO}")
+set(YAJL_DIST_NAME "yajl-${YAJL_MAJOR}.${YAJL_MINOR}.${YAJL_MICRO}")
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(CMAKE_SHARED_MODULE_CREATE_C_FLAGS
@@ -28,21 +28,16 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     cmake_policy(SET CMP0042 NEW)
 endif()
 
-IF (NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE "Release")
-ENDIF (NOT CMAKE_BUILD_TYPE)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -pedantic -Wpointer-arith")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-format-y2k -Wstrict-prototypes")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-declarations -Wnested-externs")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra	-Wundef -Wwrite-strings")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wold-style-definition -Wredundant-decls")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter -Wno-sign-compare ")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-prototypes")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-gnu-statement-expression")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
-
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -pedantic -Wpointer-arith")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-format-y2k -Wstrict-prototypes")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-declarations -Wnested-externs")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra	-Wundef -Wwrite-strings")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wold-style-definition -Wredundant-decls")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter -Wno-sign-compare ")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-prototypes")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
-
-ADD_SUBDIRECTORY(src)
+add_subdirectory(src)

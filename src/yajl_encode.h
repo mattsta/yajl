@@ -20,8 +20,7 @@
 #include "api/yajl_gen.h"
 #include "yajl_buf.h"
 
-void yajl_string_encode(const yajl_print_t printer, void *ctx,
-                        const unsigned char *str, size_t length,
+void yajl_string_encode(void *ctx, const unsigned char *str, size_t length,
                         int escape_solidus);
 
 void yajl_string_decode(yajl_buf buf, const unsigned char *str, size_t length);

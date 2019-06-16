@@ -20,6 +20,8 @@
 #include "api/yajl_common.h"
 #include "yajl_alloc.h"
 
+#include <stdint.h>
+
 /*
  * Implementation/performance notes.  If this were moved to a header
  * only implementation using #define's where possible we might be
@@ -31,10 +33,15 @@
  * yajl_buf is a buffer with exponential growth.  the buffer ensures that
  * you are always null padded.
  */
-typedef struct yajl_buf_t *yajl_buf;
+#define YAJL_BUF_INIT_SIZE 512
 
-/* allocate a new buffer */
-yajl_buf yajl_buf_alloc(const yajl_alloc_funcs *alloc);
+typedef struct yajl_buf_t {
+    uint8_t *data;
+    size_t len;
+    size_t used;
+} yajl_buf_t;
+
+typedef struct yajl_buf_t *yajl_buf;
 
 /* free the buffer */
 void yajl_buf_free(yajl_buf buf);
@@ -46,7 +53,7 @@ void yajl_buf_append(yajl_buf buf, const void *data, size_t len);
 void yajl_buf_clear(yajl_buf buf);
 
 /* get a pointer to the beginning of the buffer */
-const unsigned char *yajl_buf_data(yajl_buf buf);
+const void *yajl_buf_data(yajl_buf buf);
 
 /* get the length of the buffer */
 size_t yajl_buf_len(yajl_buf buf);

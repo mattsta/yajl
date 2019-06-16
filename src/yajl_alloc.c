@@ -16,14 +16,14 @@
 
 /**
  * \file yajl_alloc.h
- * default memory allocation routines for yajl which use malloc/realloc and
+ * default memory allocation routines for yajl which use calloc/realloc and
  * free
  */
 
 #include "yajl_alloc.h"
 #include <stdlib.h>
 
-static void *yajl_internal_malloc(void *ctx, size_t sz) {
+static void *yajl_internal_calloc(void *ctx, size_t sz) {
     (void)ctx;
     return calloc(1, sz);
 }
@@ -39,8 +39,12 @@ static void yajl_internal_free(void *ctx, void *ptr) {
 }
 
 void yajl_set_default_alloc_funcs(yajl_alloc_funcs *yaf) {
-    yaf->malloc = yajl_internal_malloc;
+    yaf->calloc = yajl_internal_calloc;
     yaf->free = yajl_internal_free;
     yaf->realloc = yajl_internal_realloc;
     yaf->ctx = NULL;
 }
+
+yajl_alloc_funcs yaf = {.calloc = yajl_internal_calloc,
+                        .free = yajl_internal_free,
+                        .realloc = yajl_internal_realloc};

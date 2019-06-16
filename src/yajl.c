@@ -48,7 +48,7 @@ yajl_handle yajl_alloc(const yajl_callbacks *callbacks, yajl_alloc_funcs *afs,
 
     /* first order of business is to set up memory allocation routines */
     if (afs != NULL) {
-        if (afs->malloc == NULL || afs->realloc == NULL || afs->free == NULL) {
+        if (afs->calloc == NULL || afs->realloc == NULL || afs->free == NULL) {
             return NULL;
         }
     } else {
@@ -56,18 +56,14 @@ yajl_handle yajl_alloc(const yajl_callbacks *callbacks, yajl_alloc_funcs *afs,
         afs = &afsBuffer;
     }
 
-    hand = (yajl_handle)YA_MALLOC(afs, sizeof(struct yajl_handle_t));
-
-    /* copy in pointers to allocation routines */
-    memcpy((void *)&(hand->alloc), (void *)afs, sizeof(yajl_alloc_funcs));
+    hand = (yajl_handle)YA_CALLOC(sizeof(struct yajl_handle_t));
 
     hand->callbacks = callbacks;
     hand->ctx = ctx;
     hand->lexer = NULL;
     hand->bytesConsumed = 0;
-    hand->decodeBuf = yajl_buf_alloc(&(hand->alloc));
     hand->flags = 0;
-    yajl_bs_init(hand->stateStack, &(hand->alloc));
+    yajl_bs_init(hand->stateStack);
     yajl_bs_push(hand->stateStack, yajl_state_start);
 
     return hand;
@@ -102,13 +98,13 @@ int yajl_config(yajl_handle h, yajl_option opt, ...) {
 
 void yajl_free(yajl_handle handle) {
     yajl_bs_free(handle->stateStack);
-    yajl_buf_free(handle->decodeBuf);
+    yajl_buf_free(&handle->decodeBuf);
     if (handle->lexer) {
         yajl_lex_free(handle->lexer);
         handle->lexer = NULL;
     }
 
-    YA_FREE(&(handle->alloc), handle);
+    YA_FREE(handle);
 }
 
 yajl_status yajl_parse(yajl_handle hand, const unsigned char *jsonText,
@@ -118,7 +114,7 @@ yajl_status yajl_parse(yajl_handle hand, const unsigned char *jsonText,
     /* lazy allocation of the lexer */
     if (hand->lexer == NULL) {
         hand->lexer =
-            yajl_lex_alloc(&(hand->alloc), hand->flags & yajl_allow_comments,
+            yajl_lex_alloc(hand->flags & yajl_allow_comments,
                            !(hand->flags & yajl_dont_validate_strings));
     }
 
@@ -135,7 +131,7 @@ yajl_status yajl_complete_parse(yajl_handle hand) {
      * (multiple values, partial values, etc). */
     if (hand->lexer == NULL) {
         hand->lexer =
-            yajl_lex_alloc(&(hand->alloc), hand->flags & yajl_allow_comments,
+            yajl_lex_alloc(hand->flags & yajl_allow_comments,
                            !(hand->flags & yajl_dont_validate_strings));
     }
 
@@ -158,7 +154,7 @@ size_t yajl_get_bytes_consumed(yajl_handle hand) {
 
 void yajl_free_error(yajl_handle hand, unsigned char *str) {
     /* use memory allocation functions if set */
-    YA_FREE(&(hand->alloc), str);
+    YA_FREE(str);
 }
 
 /* XXX: add utility routines to parse from file */

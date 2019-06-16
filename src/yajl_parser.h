@@ -48,11 +48,9 @@ struct yajl_handle_t {
      * case of an error this can be used as the error offset */
     size_t bytesConsumed;
     /* temporary storage for decoded strings */
-    yajl_buf decodeBuf;
+    yajl_buf_t decodeBuf;
     /* a stack of states.  access with yajl_state_XXX routines */
     yajl_bytestack stateStack;
-    /* memory allocation routines */
-    yajl_alloc_funcs alloc;
     /* bitfield */
     unsigned int flags;
 };

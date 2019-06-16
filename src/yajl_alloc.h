@@ -25,9 +25,12 @@
 
 #include "api/yajl_common.h"
 
-#define YA_MALLOC(afs, sz) (afs)->malloc((afs)->ctx, (sz))
-#define YA_FREE(afs, ptr) (afs)->free((afs)->ctx, (ptr))
-#define YA_REALLOC(afs, ptr, sz) (afs)->realloc((afs)->ctx, (ptr), (sz))
+/* Global allocation functions so we don't tote them around inside structs */
+extern yajl_alloc_funcs yaf;
+
+#define YA_CALLOC(sz) yaf.calloc(NULL, sz)
+#define YA_FREE(ptr) yaf.free(NULL, ptr)
+#define YA_REALLOC(ptr, sz) yaf.realloc(NULL, ptr, sz)
 
 void yajl_set_default_alloc_funcs(yajl_alloc_funcs *yaf);
 

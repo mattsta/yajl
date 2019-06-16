@@ -20,53 +20,38 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define YAJL_BUF_INIT_SIZE 2048
-
-struct yajl_buf_t {
-    size_t len;
-    size_t used;
-    unsigned char *data;
-    const yajl_alloc_funcs *alloc;
-};
+#include "../../datakit/src/jebuf.h"
 
 static void yajl_buf_ensure_available(yajl_buf buf, size_t want) {
-    size_t need;
-
-    assert(buf != NULL);
+    assert(buf);
 
     /* first call */
     if (buf->data == NULL) {
         buf->len = YAJL_BUF_INIT_SIZE;
-        buf->data = (unsigned char *)YA_MALLOC(buf->alloc, buf->len);
-        buf->data[0] = 0;
+        buf->data = (uint8_t *)YA_CALLOC(buf->len);
     }
 
-    need = buf->len;
+    size_t need = buf->len;
 
     while (want >= (need - buf->used)) {
+#if 0
+        need = jebufSizeAllocation(need << 1);
+#else
         need <<= 1;
+#endif
     }
 
     if (need != buf->len) {
-        buf->data = (unsigned char *)YA_REALLOC(buf->alloc, buf->data, need);
+        buf->data = (unsigned char *)YA_REALLOC(buf->data, need);
         buf->len = need;
     }
 }
 
-yajl_buf yajl_buf_alloc(const yajl_alloc_funcs *alloc) {
-    yajl_buf b = YA_MALLOC(alloc, sizeof(struct yajl_buf_t));
-    memset((void *)b, 0, sizeof(struct yajl_buf_t));
-    b->alloc = alloc;
-    return b;
-}
-
 void yajl_buf_free(yajl_buf buf) {
-    assert(buf != NULL);
+    assert(buf);
     if (buf->data) {
-        YA_FREE(buf->alloc, buf->data);
+        YA_FREE(buf->data);
     }
-
-    YA_FREE(buf->alloc, buf);
 }
 
 void yajl_buf_append(yajl_buf buf, const void *data, size_t len) {
@@ -86,7 +71,7 @@ void yajl_buf_clear(yajl_buf buf) {
     }
 }
 
-const unsigned char *yajl_buf_data(yajl_buf buf) {
+const void *yajl_buf_data(yajl_buf buf) {
     return buf->data;
 }
 

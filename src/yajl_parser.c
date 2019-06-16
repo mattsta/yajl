@@ -97,12 +97,11 @@ unsigned char *yajl_render_error_string(yajl_handle hand,
             memneeded += strlen(errorText);
         }
 
-        str = (unsigned char *)YA_MALLOC(&(hand->alloc), memneeded + 2);
+        str = (unsigned char *)YA_CALLOC(memneeded + 2);
         if (!str) {
             return NULL;
         }
 
-        str[0] = 0;
         strcat((char *)str, errorType);
         strcat((char *)str, " error");
         if (errorText != NULL) {
@@ -141,18 +140,16 @@ unsigned char *yajl_render_error_string(yajl_handle hand,
         text[i++] = '\n';
         text[i] = 0;
         {
-            char *newStr = (char *)YA_MALLOC(
-                &(hand->alloc),
+            char *newStr = (char *)YA_CALLOC(
                 (unsigned int)(strlen((char *)str) + strlen((char *)text) +
                                strlen(arrow) + 1));
             if (newStr) {
-                newStr[0] = 0;
                 strcat((char *)newStr, (char *)str);
                 strcat((char *)newStr, text);
                 strcat((char *)newStr, arrow);
             }
 
-            YA_FREE(&(hand->alloc), str);
+            YA_FREE(str);
             str = (unsigned char *)newStr;
         }
     }
@@ -259,11 +256,11 @@ around_again:
             break;
         case yajl_tok_string_with_escapes:
             if (hand->callbacks && hand->callbacks->yajl_string) {
-                yajl_buf_clear(hand->decodeBuf);
-                yajl_string_decode(hand->decodeBuf, buf, bufLen);
+                yajl_buf_clear(&hand->decodeBuf);
+                yajl_string_decode(&hand->decodeBuf, buf, bufLen);
                 _CC_CHK(hand->callbacks->yajl_string(
-                    hand->ctx, yajl_buf_data(hand->decodeBuf),
-                    yajl_buf_len(hand->decodeBuf)));
+                    hand->ctx, yajl_buf_data(&hand->decodeBuf),
+                    yajl_buf_len(&hand->decodeBuf)));
             }
 
             break;
@@ -327,9 +324,9 @@ around_again:
                         hand->ctx, (const char *)buf, bufLen));
                 } else if (hand->callbacks->yajl_double) {
                     double d = 0.0;
-                    yajl_buf_clear(hand->decodeBuf);
-                    yajl_buf_append(hand->decodeBuf, buf, bufLen);
-                    buf = yajl_buf_data(hand->decodeBuf);
+                    yajl_buf_clear(&hand->decodeBuf);
+                    yajl_buf_append(&hand->decodeBuf, buf, bufLen);
+                    buf = yajl_buf_data(&hand->decodeBuf);
                     errno = 0;
                     d = strtod((char *)buf, NULL);
                     if ((d == HUGE_VAL || d == -HUGE_VAL) && errno == ERANGE) {
@@ -410,10 +407,10 @@ around_again:
             goto around_again;
         case yajl_tok_string_with_escapes:
             if (hand->callbacks && hand->callbacks->yajl_map_key) {
-                yajl_buf_clear(hand->decodeBuf);
-                yajl_string_decode(hand->decodeBuf, buf, bufLen);
-                buf = yajl_buf_data(hand->decodeBuf);
-                bufLen = yajl_buf_len(hand->decodeBuf);
+                yajl_buf_clear(&hand->decodeBuf);
+                yajl_string_decode(&hand->decodeBuf, buf, bufLen);
+                buf = yajl_buf_data(&hand->decodeBuf);
+                bufLen = yajl_buf_len(&hand->decodeBuf);
             }
 
             /* intentional fall-through */

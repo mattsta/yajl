@@ -27,8 +27,7 @@ static void CharToHex(unsigned char c, char *hexBuf) {
     hexBuf[1] = hexchar[c & 0x0F];
 }
 
-void yajl_string_encode(const yajl_print_t print, void *ctx,
-                        const unsigned char *str, size_t len,
+void yajl_string_encode(void *ctx, const unsigned char *str, size_t len,
                         int escape_solidus) {
     size_t beg = 0;
     size_t end = 0;
@@ -83,15 +82,15 @@ void yajl_string_encode(const yajl_print_t print, void *ctx,
         }
 
         if (escaped != NULL) {
-            print(ctx, (const char *)(str + beg), end - beg);
-            print(ctx, escaped, (unsigned int)strlen(escaped));
+            yajl_buf_append(ctx, (const char *)(str + beg), end - beg);
+            yajl_buf_append(ctx, escaped, (unsigned int)strlen(escaped));
             beg = ++end;
         } else {
             ++end;
         }
     }
 
-    print(ctx, (const char *)(str + beg), end - beg);
+    yajl_buf_append(ctx, (const char *)(str + beg), end - beg);
 }
 
 static void hexToDigit(unsigned int *val, const unsigned char *hex) {
