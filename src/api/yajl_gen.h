@@ -75,16 +75,21 @@ _Static_assert(sizeof(yajl_gen_state) == 1, "Not using packed state?");
 typedef struct yajlGenStateStatus {
     yajl_gen_state local[8];
     yajl_gen_state *allocated;
-    uint32_t count;
-    uint32_t totalCountOfAllocated;
+    size_t count;
+    size_t totalCountOfAllocated;
 } yajlGenStateStatus;
 
 typedef struct yajl_gen_t {
     yajl_buf_t buf;
     yajlGenStateStatus statusAtDepth;
-    size_t flags;
-    size_t depth;
+    /* If your JSON nesting depth is higher than 72,057,594,037,927,936 you have
+     * a bigger problem than running out of bits for depth storage... */
+    uint64_t depth : 56;
+    uint64_t flags : 8; /* flags are an instance of 'yajl_gen_option' */
 } yajl_gen_t;
+
+_Static_assert(sizeof(yajl_gen_t) == (8 * 3) + ((8 * 2) + (8 * 2)) + (8),
+               "gen_t bigger than we think?");
 
 /** an opaque handle to a generator */
 typedef struct yajl_gen_t *yajl_gen;
@@ -92,7 +97,7 @@ typedef struct yajl_gen_t *yajl_gen;
 /** configuration parameters for the parser, these may be passed to
  *  yajl_gen_config() along with option specific argument(s).  In general,
  *  all configuration parameters default to *off*. */
-typedef enum {
+typedef enum yajl_gen_option {
     /** generate indented (beautiful) output */
     yajl_gen_beautify = 0x01,
     /**
