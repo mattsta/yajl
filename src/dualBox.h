@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../../datakit/src/fibbuf.h"
-
 #ifndef COUNT_ARRAY
 #define COUNT_ARRAY(x) (sizeof(x) / sizeof(*(x)))
 #endif
@@ -21,7 +19,7 @@
                                                                                \
             /* Not enough allocated space, so grow it. */                      \
             if (allocateHigh >= allocatedCount) {                              \
-                const size_t growCount = fibbufNextSizeBuffer(allocateHigh);   \
+                const size_t growCount = 2 * allocateHigh;                     \
                 const size_t growSize =                                        \
                     growCount * sizeof(*(storage)->allocated);                 \
                                                                                \
