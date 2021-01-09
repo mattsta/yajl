@@ -1,4 +1,18 @@
 **********************************************************************
+        This is YAJL 2 Modified By matt.
+**********************************************************************
+
+This divergent feature improvement branch includes:
+
+- code cleanup
+- better memory management
+- better build system
+- better memory efficiency
+- more modern type-aware programming
+- modern coding standards
+
+
+**********************************************************************
         This is YAJL 2.  For the legacy version of YAJL see
               https://github.com/lloyd/yajl/tree/1.x
 **********************************************************************
